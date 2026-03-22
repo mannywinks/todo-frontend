@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-function TodoItem({task ,index ,deleteTask, toggleComplete, updateTask}) {
+function TodoItem({task , deleteTask, toggleComplete, updateTask}) {
 
     const [isEditing, setIsEditing] = useState(false)
     const [newText, setNewText] = useState(task.text)
@@ -8,7 +8,7 @@ function TodoItem({task ,index ,deleteTask, toggleComplete, updateTask}) {
     return (
         <li className={`task ${task.completed ? "completed" : ""}`}>
 
-            <div onClick={() => toggleComplete(index)}>
+            <div onClick={() => toggleComplete(task)}>
 
                 <span className="check">
                     {task.completed ? "✓" : ""}
@@ -41,7 +41,7 @@ function TodoItem({task ,index ,deleteTask, toggleComplete, updateTask}) {
                             </>
                     ) : (
                         <>
-                        <span onClick = {() => toggleComplete(index)}>
+                        <span onClick = {() => toggleComplete(task)}>
                         {task.text}
                         </span>
                         

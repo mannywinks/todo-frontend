@@ -13,6 +13,7 @@ function App() {
     const savedTasks = localStorage.getItem("tasks")
     return savedTasks ? JSON.parse(savedTasks) : []
   })
+  const [category, setCategory] = useState("")
 
   //fetch tasks from backend
   useEffect(() => {
@@ -22,9 +23,10 @@ function App() {
   
   
 
+  //  const addTask = async () => {
+  //   if(task === " ") 
    const addTask = async () => {
-    if(task === " ") return
-
+  console.log("CLICK WORKING") 
     const newTask = {
       text: task,
       day: day,
@@ -50,22 +52,44 @@ function App() {
        }
 
 
-    const toggleComplete = (index) => {
-      const updatedTasks = tasks.map((task, i) => {
-        if(i === index) {
-          return {...task, completed: !task.completed}
-        }
-        return task
-      })
-      setTasks(updatedTasks)
-    }
+    // const toggleComplete = async (id) => {
+    //   const updatedTasks = tasks.map((task) => {
+    //     if(task._id === id) {
+    //       return {...task, completed: !task.completed}
+    //     }
+    //     return task
+    //   })
+    //   setTasks(updatedTasks)
+    // }
+
+     const toggleComplete = async (task) => {
+
+  console.log("TOGGLE CLICKED")
+
+  const updatedTask = {
+    ...task,
+    completed: !task.completed
+  }
+
+  try {
+    const res = await axios.put(
+      `http://localhost:5000/tasks/${task._id}`,
+      updatedTask
+    )
+
+    console.log(res.data) // 👈 add this
+
+    setTasks(tasks.map(t => t._id === task._id ? res.data : t))
+
+  } catch (err) {
+    console.log("ERROR:", err)
+  }
+}
 
     const updateTask = async (id, updatedTask ) => {
       const res = await axios.put(`http://localhost:5000/tasks/${id}`, updatedTask)
       setTasks(tasks.map(t => t._id === id ? res.data : t))
     }
-
-    const [category, setCategory] = useState("")
 
     const completedTasks = tasks.filter(task => task.completed).length
 

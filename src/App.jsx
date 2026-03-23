@@ -6,6 +6,10 @@ import './App.css'
 
 function App() {
 
+  
+  const API_BASE_URL = "https://todo-backend-jxyn.onrender.com"
+  //  API_BASE_URL = "https://todo-backend-jxyn.onrender.com"
+
   const [ task, setTask] = useState("")
   const [day, setDay] = useState("")
   const [time, setTime] = useState("")
@@ -17,14 +21,11 @@ function App() {
 
   //fetch tasks from backend
   useEffect(() => {
-    axios.get('http://localhost:5000/tasks')
+    axios.get(`${API_BASE_URL}/tasks`)
     .then(res => setTasks(res.data))
   }, [])
   
-  
 
-  //  const addTask = async () => {
-  //   if(task === " ") 
    const addTask = async () => {
   console.log("CLICK WORKING") 
     const newTask = {
@@ -35,49 +36,31 @@ function App() {
       completed: false
     }
 
-    const res = await axios.post('http://localhost:5000/tasks', newTask)
+    const res = await axios.post(`${API_BASE_URL}/tasks`, newTask)
 
     setTasks([...tasks, res.data])
    
   }
  
-    // const deleteTask = (indexToDelete) => {
-    //   const updatedTasks = tasks.filter((task,index) => index !== indexToDelete)
-    //   setTasks(updatedTasks)
-    // }
-
+  
        const deleteTask = async (id) => {
-        await axios.delete(`http://localhost:5000/tasks/${id}`)
+        await axios.delete(`${API_BASE_URL}/tasks/${id}`)
         setTasks(tasks.filter(task => task._id !== id))
        }
 
-
-    // const toggleComplete = async (id) => {
-    //   const updatedTasks = tasks.map((task) => {
-    //     if(task._id === id) {
-    //       return {...task, completed: !task.completed}
-    //     }
-    //     return task
-    //   })
-    //   setTasks(updatedTasks)
-    // }
-
+  
      const toggleComplete = async (task) => {
 
   console.log("TOGGLE CLICKED")
 
-  const updatedTask = {
-    ...task,
-    completed: !task.completed
-  }
-
   try {
     const res = await axios.put(
-      `http://localhost:5000/tasks/${task._id}`,
-      updatedTask
+      `${API_BASE_URL}/tasks/${task._id}`,
+      { completed: !task.completed }
     )
-
-    console.log(res.data) // 👈 add this
+  
+    
+    console.log(res.data)
 
     setTasks(tasks.map(t => t._id === task._id ? res.data : t))
 
@@ -87,7 +70,7 @@ function App() {
 }
 
     const updateTask = async (id, updatedTask ) => {
-      const res = await axios.put(`http://localhost:5000/tasks/${id}`, updatedTask)
+      const res = await axios.put(`${API_BASE_URL}/tasks/${id}`, updatedTask)
       setTasks(tasks.map(t => t._id === id ? res.data : t))
     }
 

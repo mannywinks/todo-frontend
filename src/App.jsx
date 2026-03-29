@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react'
 import TodoInput  from './components/TodoInput'
 import TodoList from './components/TodoList'
+import { BrowserRouter as Router, Route, Routes , Navigate} from 'react-router-dom'
+import Signup from './pages/Signup'
+import Login from './pages/Login'
+
 import axios from 'axios'
 import './App.css'
+
+const isAuthenticated = () => !!localStorage.getItem("token")
 
 function App() {
 
@@ -18,6 +24,7 @@ function App() {
     return savedTasks ? JSON.parse(savedTasks) : []
   })
   const [category, setCategory] = useState("")
+
 
   //fetch tasks from backend
   useEffect(() => {
@@ -77,11 +84,22 @@ function App() {
     const completedTasks = tasks.filter(task => task.completed).length
 
     const clearCompleted  = () => {
-
+    
       const activeTasks = tasks.filter(task => !task.completed)
-
+      const completedTasks = tasks.filter(task => task.completed)
+      
       setTasks(activeTasks)
 
+  
+      completedTasks.forEach(async (t) => {
+        try {
+          await axios.delete(`${API_BASE_URL}/tasks/${t._id}`, {
+            headers: { Authorization: localStorage.getItem("token") }
+          })
+        } catch (err) {
+          console.error("Failed to delete task:", t._id, err)
+        }
+      })
     }
   return (
     <>
@@ -120,6 +138,23 @@ function App() {
         <button onClick={clearCompleted}>
           Clear Completed
         </button>
+
+        <Router>
+          <Routes>
+            <Route path = "/" element = {<Login />} />
+            <Route path = "/signup" element = {<Signup />} />
+            <Route path = "/Login" element = {<Login />} />
+            <Route path = "/tasks" element = {
+              isAuthenticated() ? (
+                <TodoList
+                  tasks={tasks} deleteTask={deleteTask} 
+                  toggleComplete={toggleComplete}
+                  updateTask={updateTask} />
+              ) : (
+                <Navigate to="/" />
+              )} />
+          </Routes>
+        </Router>
 
        
       </div>

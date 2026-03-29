@@ -24,7 +24,7 @@ function TodoItem({task , deleteTask, toggleComplete, updateTask, setTasks}) {
            }
         }
         fetchTasks()
-            },[])
+            },[setTasks])
 
   
      

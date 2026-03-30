@@ -1,22 +1,12 @@
 import { useState, useEffect } from 'react'
 import TodoInput  from './components/TodoInput'
 import TodoList from './components/TodoList'
-import { BrowserRouter as Router, Route, Routes , Navigate} from 'react-router-dom'
-import Signup from './pages/Signup'
-import Login from './pages/Login'
 
 import axios from 'axios'
 import './App.css'
 
 function App() {
-
   const API_BASE_URL = "https://todo-backend-jxyn.onrender.com"
-  const token = localStorage.getItem("token")
-  const isAuthenticated = !!token
-
-  const getAuthHeaders = () => ({
-    headers: { Authorization: localStorage.getItem("token") }
-  })
 
   const [ task, setTask] = useState("")
   const [day, setDay] = useState("")
@@ -25,26 +15,23 @@ function App() {
     try {
       const savedTasks = localStorage.getItem("tasks")
       return savedTasks ? JSON.parse(savedTasks) : []
-    } catch (e) {
+    } catch (err) {
+      console.error("Error loading tasks from localStorage", err)
       return []
     }
   })
   const [category, setCategory] = useState("")
 
-
   //fetch tasks from backend
   useEffect(() => {
-    if (isAuthenticated) {
-      axios.get(`${API_BASE_URL}/tasks`, getAuthHeaders())
-        .then(res => {
-          if (Array.isArray(res.data)) {
-            setTasks(res.data)
-          }
-        })
-        .catch(err => console.error("Failed to fetch tasks", err))
-    }
-  }, [isAuthenticated])
-  
+    axios.get(`${API_BASE_URL}/tasks`)
+      .then(res => {
+        if (Array.isArray(res.data)) {
+          setTasks(res.data)
+        }
+      })
+      .catch(err => console.error("Failed to fetch tasks", err))
+  }, []) 
 
    const addTask = async () => {
     try {
@@ -55,7 +42,7 @@ function App() {
         category:  category,
         completed: false
       }
-      const res = await axios.post(`${API_BASE_URL}/tasks`, newTask, getAuthHeaders())
+      const res = await axios.post(`${API_BASE_URL}/tasks`, newTask)
       setTasks([...tasks, res.data])
       setTask("") // clear input after adding
     } catch (err) {
@@ -66,92 +53,76 @@ function App() {
   
   const deleteTask = async (id) => {
     try {
-      await axios.delete(`${API_BASE_URL}/tasks/${id}`, getAuthHeaders())
-      setTasks(tasks.filter(task => task._id !== id))
+      const targetId = id._id || id;
+      await axios.delete(`${API_BASE_URL}/tasks/${targetId}`)
+      setTasks(tasks.filter(t => (t._id || t.id) !== targetId))
     } catch (err) {
       console.error("Delete error:", err)
     }
   }
 
-  
-  const toggleComplete = async (task) => {
-  try {
-    const res = await axios.put(
-      `${API_BASE_URL}/tasks/${task._id}`,
-      { completed: !task.completed },
-      getAuthHeaders()
-    )
-    setTasks(tasks.map(t => t._id === task._id ? res.data : t))
-  } catch (err) {
-    console.log("ERROR:", err)
+  const toggleComplete = async (todo) => {
+    try {
+      const res = await axios.put(
+        `${API_BASE_URL}/tasks/${todo._id}`,
+        { completed: !todo.completed }
+      )
+      setTasks(tasks.map(t => t._id === todo._id ? res.data : t))
+    } catch (err) {
+      console.error("Toggle error:", err)
+    }
   }
-}
 
-    const updateTask = async (id, updatedTask ) => {
+  const updateTask = async (id, updatedTask) => {
+    try {
+      const targetId = id._id || id;
+      const res = await axios.put(`${API_BASE_URL}/tasks/${targetId}`, updatedTask)
+      setTasks(tasks.map(t => (t._id === targetId || t.id === targetId) ? res.data : t))
+    } catch (err) {
+      console.error("Update error:", err)
+    }
+  }
+
+  const clearCompleted = () => {
+    const activeTasks = tasks.filter(t => !t.completed)
+    const completedTasks = tasks.filter(t => t.completed)
+
+    setTasks(activeTasks)
+
+    completedTasks.forEach(async (t) => {
       try {
-        const res = await axios.put(`${API_BASE_URL}/tasks/${id}`, updatedTask, getAuthHeaders())
-        setTasks(tasks.map(t => t._id === id ? res.data : t))
+        await axios.delete(`${API_BASE_URL}/tasks/${t._id}`)
       } catch (err) {
-        console.error("Update error:", err)
+        console.error("Failed to delete task:", t._id, err)
       }
-    }
+    })
+  }
 
-    const clearCompleted  = () => {
-    
-      const activeTasks = tasks.filter(task => !task.completed)
-      const completedTasks = tasks.filter(task => task.completed)
-      
-      setTasks(activeTasks)
-  
-      completedTasks.forEach(async (t) => {
-        try {
-          await axios.delete(`${API_BASE_URL}/tasks/${t._id}`, getAuthHeaders())
-        } catch (err) {
-          console.error("Failed to delete task:", t._id, err)
-        }
-      })
-    }
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={isAuthenticated ? <Navigate to="/tasks" /> : <Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/tasks"
-          element={
-            isAuthenticated ? (
-              <div>
-                <h1>My Todo App</h1>
-                <TodoInput
-                  task={task}
-                  setTask={setTask}
-                  day={day}
-                  setDay={setDay}
-                  time={time}
-                  setTime={setTime}
-                  category={category}
-                  setCategory={setCategory}
-                  addTask={addTask}
-                />
-                <p>Total Tasks: {tasks.length}</p>
-                <TodoList
-                  tasks={tasks}
-                  deleteTask={deleteTask}
-                  toggleComplete={toggleComplete}
-                  updateTask={updateTask}
-                />
-                <button onClick={clearCompleted}>
-                  Clear Completed
-                </button>
-              </div>
-            ) : (
-              <Navigate to="/" />
-            )
-          }
-        />
-      </Routes>
-    </Router>
+    <div>
+      <h1>My Todo App</h1>
+      <TodoInput
+        task={task}
+        setTask={setTask}
+        day={day}
+        setDay={setDay}
+        time={time}
+        setTime={setTime}
+        category={category}
+        setCategory={setCategory}
+        addTask={addTask}
+      />
+      <p>Total Tasks: {tasks.length}</p>
+      <TodoList
+        tasks={tasks}
+        deleteTask={deleteTask}
+        toggleComplete={toggleComplete}
+        updateTask={updateTask}
+      />
+      <button onClick={clearCompleted} type="button">
+        Clear Completed
+      </button>
+    </div>
   )
 }
 

@@ -8,80 +8,93 @@ import Login from './pages/Login'
 import axios from 'axios'
 import './App.css'
 
-const isAuthenticated = () => !!localStorage.getItem("token")
-
 function App() {
 
-  
   const API_BASE_URL = "https://todo-backend-jxyn.onrender.com"
-  //  API_BASE_URL = "https://todo-backend-jxyn.onrender.com"
+  const token = localStorage.getItem("token")
+  const isAuthenticated = !!token
+
+  const getAuthHeaders = () => ({
+    headers: { Authorization: localStorage.getItem("token") }
+  })
 
   const [ task, setTask] = useState("")
   const [day, setDay] = useState("")
   const [time, setTime] = useState("")
   const [ tasks, setTasks] = useState(() => {
-    const savedTasks = localStorage.getItem("tasks")
-    return savedTasks ? JSON.parse(savedTasks) : []
+    try {
+      const savedTasks = localStorage.getItem("tasks")
+      return savedTasks ? JSON.parse(savedTasks) : []
+    } catch (e) {
+      return []
+    }
   })
   const [category, setCategory] = useState("")
 
 
   //fetch tasks from backend
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/tasks`)
-    .then(res => setTasks(res.data))
-  }, [])
+    if (isAuthenticated) {
+      axios.get(`${API_BASE_URL}/tasks`, getAuthHeaders())
+        .then(res => {
+          if (Array.isArray(res.data)) {
+            setTasks(res.data)
+          }
+        })
+        .catch(err => console.error("Failed to fetch tasks", err))
+    }
+  }, [isAuthenticated])
   
 
    const addTask = async () => {
-  console.log("CLICK WORKING") 
-    const newTask = {
-      text: task,
-      day: day,
-      time: time,
-      category:  category,
-      completed: false
+    try {
+      const newTask = {
+        text: task,
+        day: day,
+        time: time,
+        category:  category,
+        completed: false
+      }
+      const res = await axios.post(`${API_BASE_URL}/tasks`, newTask, getAuthHeaders())
+      setTasks([...tasks, res.data])
+      setTask("") // clear input after adding
+    } catch (err) {
+      console.error("Add error:", err)
     }
-
-    const res = await axios.post(`${API_BASE_URL}/tasks`, newTask)
-
-    setTasks([...tasks, res.data])
-   
   }
  
   
-       const deleteTask = async (id) => {
-        await axios.delete(`${API_BASE_URL}/tasks/${id}`)
-        setTasks(tasks.filter(task => task._id !== id))
-       }
+  const deleteTask = async (id) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/tasks/${id}`, getAuthHeaders())
+      setTasks(tasks.filter(task => task._id !== id))
+    } catch (err) {
+      console.error("Delete error:", err)
+    }
+  }
 
   
-     const toggleComplete = async (task) => {
-
-  console.log("TOGGLE CLICKED")
-
+  const toggleComplete = async (task) => {
   try {
     const res = await axios.put(
       `${API_BASE_URL}/tasks/${task._id}`,
-      { completed: !task.completed }
+      { completed: !task.completed },
+      getAuthHeaders()
     )
-  
-    
-    console.log(res.data)
-
     setTasks(tasks.map(t => t._id === task._id ? res.data : t))
-
   } catch (err) {
     console.log("ERROR:", err)
   }
 }
 
     const updateTask = async (id, updatedTask ) => {
-      const res = await axios.put(`${API_BASE_URL}/tasks/${id}`, updatedTask)
-      setTasks(tasks.map(t => t._id === id ? res.data : t))
+      try {
+        const res = await axios.put(`${API_BASE_URL}/tasks/${id}`, updatedTask, getAuthHeaders())
+        setTasks(tasks.map(t => t._id === id ? res.data : t))
+      } catch (err) {
+        console.error("Update error:", err)
+      }
     }
-
-    const completedTasks = tasks.filter(task => task.completed).length
 
     const clearCompleted  = () => {
     
@@ -89,77 +102,56 @@ function App() {
       const completedTasks = tasks.filter(task => task.completed)
       
       setTasks(activeTasks)
-
   
       completedTasks.forEach(async (t) => {
         try {
-          await axios.delete(`${API_BASE_URL}/tasks/${t._id}`, {
-            headers: { Authorization: localStorage.getItem("token") }
-          })
+          await axios.delete(`${API_BASE_URL}/tasks/${t._id}`, getAuthHeaders())
         } catch (err) {
           console.error("Failed to delete task:", t._id, err)
         }
       })
     }
   return (
-    <>
-      <div>
-        <h1>My Todo App</h1>
-
-        <TodoInput
-        task={task}
-        setTask={setTask}
-        day={day}
-        setDay={setDay}
-        time={time}
-        setTime={setTime}
-        category={category}
-        setCategory={setCategory}
-        addTask={addTask}
-        />
-        <p>Total Tasks: {tasks.length}</p>
-        <TodoList
-        tasks={tasks}
-        deleteTask={deleteTask}
-        toggleComplete={toggleComplete}
-        updateTask={updateTask}
-        />
-
-        <p>
-          Progress: {completedTasks} / {tasks.length}
-        </p>
-        <div className='progress-bar'>
-          <div
-          className= "progress-fill"
-          style={{width: `${(completedTasks / tasks.length) * 100 || 0 }%`}}
-          ></div>
-        </div>
-
-        <button onClick={clearCompleted}>
-          Clear Completed
-        </button>
-
-        <Router>
-          <Routes>
-            <Route path = "/" element = {<Login />} />
-            <Route path = "/signup" element = {<Signup />} />
-            <Route path = "/Login" element = {<Login />} />
-            <Route path = "/tasks" element = {
-              isAuthenticated() ? (
+    <Router>
+      <Routes>
+        <Route path="/" element={isAuthenticated ? <Navigate to="/tasks" /> : <Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/tasks"
+          element={
+            isAuthenticated ? (
+              <div>
+                <h1>My Todo App</h1>
+                <TodoInput
+                  task={task}
+                  setTask={setTask}
+                  day={day}
+                  setDay={setDay}
+                  time={time}
+                  setTime={setTime}
+                  category={category}
+                  setCategory={setCategory}
+                  addTask={addTask}
+                />
+                <p>Total Tasks: {tasks.length}</p>
                 <TodoList
-                  tasks={tasks} deleteTask={deleteTask} 
+                  tasks={tasks}
+                  deleteTask={deleteTask}
                   toggleComplete={toggleComplete}
-                  updateTask={updateTask} />
-              ) : (
-                <Navigate to="/" />
-              )} />
-          </Routes>
-        </Router>
-
-       
-      </div>
-      
-    </>
+                  updateTask={updateTask}
+                />
+                <button onClick={clearCompleted}>
+                  Clear Completed
+                </button>
+              </div>
+            ) : (
+              <Navigate to="/" />
+            )
+          }
+        />
+      </Routes>
+    </Router>
   )
 }
 

@@ -65,7 +65,7 @@ function App() {
     try {
       const targetId = id._id || id;
       await axios.delete(`${API_BASE_URL}/tasks/${targetId}`)
-      setTasks(tasks.filter(t => (t._id || t.id) !== targetId))
+      setTasks(tasks.filter(t => t._id !== targetId))
     } catch (err) {
       console.error("Delete error:", err)
     }

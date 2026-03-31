@@ -6,7 +6,7 @@ function TodoList({tasks, deleteTask, toggleComplete, updateTask}) {
         <ul>
             {tasks.map((task) => (
                 <TodoItem
-                    key={task._id || Math.random()}
+                    key={task._id}
                     task={task}
                     updateTask={updateTask}
                     deleteTask={deleteTask}

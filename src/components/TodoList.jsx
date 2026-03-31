@@ -4,9 +4,9 @@ function TodoList({tasks, deleteTask, toggleComplete, updateTask}) {
 
     return(
         <ul>
-            {tasks.map((task,index) => (
+            {tasks.map((task) => (
                 <TodoItem
-                    key={index}
+                    key={task._id || Math.random()}
                     task={task}
                     updateTask={updateTask}
                     deleteTask={deleteTask}

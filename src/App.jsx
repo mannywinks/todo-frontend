@@ -22,6 +22,11 @@ function App() {
   })
   const [category, setCategory] = useState("")
 
+  // Sync tasks to local storage whenever they change
+  useEffect(() => {
+    localStorage.setItem("tasks", JSON.stringify(tasks))
+  }, [tasks])
+
   //fetch tasks from backend
   useEffect(() => {
     axios.get(`${API_BASE_URL}/tasks`)
@@ -52,6 +57,11 @@ function App() {
  
   
   const deleteTask = async (id) => {
+    if (!id) {
+      // If task has no ID, it's a local ghost task, just filter it out
+      setTasks(tasks.filter(t => t._id !== id))
+      return
+    }
     try {
       const targetId = id._id || id;
       await axios.delete(`${API_BASE_URL}/tasks/${targetId}`)

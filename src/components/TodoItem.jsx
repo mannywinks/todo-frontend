@@ -1,44 +1,15 @@
-import { useState , useEffect } from "react";
+import { useState } from "react";
 
-import axios from "axios";
-
-
-
-
-function TodoItem({task , deleteTask, toggleComplete, updateTask, setTasks}) {
-    
+function TodoItem({task , deleteTask, toggleComplete, updateTask}) {
 
     const [isEditing, setIsEditing] = useState(false)
     const [newText, setNewText] = useState(task.text)
 
-    useEffect(() => {
-        const fetchTasks = async () => {
-            const token = localStorage.getItem("token")
-            try {
-                const res = await axios.get("https://todo-backend-jxyn.onrender.com/verify", {
-            headers: { Authorization: `Bearer ${token}`}
-        })
-        setTasks(res.data)
-           } catch (err){
-            console.error("Error verifying token:", err)
-           }
-        }
-        fetchTasks()
-            },[setTasks])
-
-  
-     
     return (
         <li className={`task ${task.completed ? "completed" : ""}`}>
-
             <div onClick={() => toggleComplete(task)}>
-
                 <span className="check">
                     {task.completed ? "✓" : ""}
-                </span>
-
-                <span className ="task-test">
-                    {task.text}
                 </span>
                 {isEditing ? (
                     <input
@@ -57,45 +28,23 @@ function TodoItem({task , deleteTask, toggleComplete, updateTask, setTasks}) {
                 </small>
             </div>
             
-
             <div>
-                {
-                    isEditing ? (
-                        <><>
-                            <input
-                                value={newText}
-                                onChange={(e) => setNewText(e.target.value)} />
-                            <button onClick={() => {
-                                updateTask(task._id, { text: newText });
-                                setIsEditing(false);
-                            } }>
-                                Save
-                            </button>
-                        </><button onClick={() => {
+                {isEditing ? (
+                    <>
+                        <button onClick={() => {
                             updateTask(task._id, { text: newText });
                             setIsEditing(false);
-                        } }>
-                                Save
-                            </button></>
-                    ) : (
-                        <>
-                        <span onClick = {() => toggleComplete(task)}>
-                        {task.text}
-                        </span>
-                        
+                        }}>
+                            Save
+                        </button>
+                    </>
+                ) : (
+                    <>
                         <button onClick={() => setIsEditing(true)}>
                             Edit
                         </button>
-                        </>
-          
+                    </>
              )}
-             <button onClick ={() => {
-                localStorage.removeItem('token')
-                window.location.href = "/"
-             }}>
-                Logout
-             </button>
-
             <button onClick={() => deleteTask(task._id)}>
                 Delete
             </button>
